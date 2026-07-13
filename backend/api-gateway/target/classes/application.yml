@@ -1,0 +1,50 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - RemoveRequestHeader=Cookie
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:lb://auth-service}
+          predicates:
+            - Path=/api/auth/**
+        - id: user-service
+          uri: ${USER_SERVICE_URL:lb://user-service}
+          predicates:
+            - Path=/api/users/**
+        - id: business-service
+          uri: ${BUSINESS_SERVICE_URL:lb://business-service}
+          predicates:
+            - Path=/api/business/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-me-in-prod}
+      issuer: ${JWT_ISSUER:app}
+  cors:
+    allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO
+

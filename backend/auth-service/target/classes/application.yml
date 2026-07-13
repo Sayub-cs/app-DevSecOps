@@ -1,0 +1,54 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: auth-service
+  flyway:
+    enabled: false
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:auth_db}
+    username: ${DB_USER:app}
+    password: ${DB_PASSWORD:app}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:10}
+      minimum-idle: ${DB_POOL_MIN:1}
+      connection-timeout: ${DB_CONN_TIMEOUT_MS:30000}
+      initialization-fail-timeout: 0
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-me-in-prod}
+      issuer: ${JWT_ISSUER:app}
+      expirationSeconds: ${JWT_EXP_SECONDS:3600}
+  cors:
+    allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+

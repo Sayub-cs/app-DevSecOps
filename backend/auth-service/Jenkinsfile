@@ -1,0 +1,146 @@
+pipeline {
+    agent { label 'agent-master' }
+
+    options {
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        SERVICE_NAME    = 'auth-service'
+        SERVICE_DIR     = 'auth-service'
+
+        GIT_REPO        = 'http://gitlab.local/pfe/Backend.git'
+        GIT_BRANCH      = 'master'
+
+        HARBOR_REGISTRY = 'harbor.local'
+        HARBOR_PROJECT  = 'pfe'
+        IMAGE_NAME      = "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${SERVICE_NAME}"
+        IMAGE_TAG       = "${BUILD_NUMBER}"
+
+        GITLAB_HOST     = 'http://gitlab.local/pfe/k8s-manifests.git'
+        K8S_BRANCH      = 'master'
+        DEPLOYMENT_FILE = 'auth-service/deployment.yaml'
+    }
+
+    stages {
+        stage('Checkout Backend Repo') {
+            steps {
+                git branch: "${GIT_BRANCH}",
+                    credentialsId: 'gitlab-creds',
+                    url: "${GIT_REPO}"
+            }
+        }
+
+        stage('Verify Project') {
+            steps {
+                sh """
+                    pwd
+                    ls -la
+                    test -d ${SERVICE_DIR}
+                    test -f ${SERVICE_DIR}/Dockerfile
+                    test -f ${SERVICE_DIR}/pom.xml
+                    test -d ${SERVICE_DIR}/src
+                    ls -la ${SERVICE_DIR}
+                """
+            }
+        }
+
+        stage('Verify Docker Access') {
+            steps {
+                sh '''
+                    docker --version
+                    docker ps
+                '''
+            }
+        }
+
+        stage('Clean Docker') {
+            steps {
+                sh 'docker system prune -a -f || true'
+                sh 'docker builder prune -a -f || true'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh """
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ${SERVICE_DIR}
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                """
+            }
+        }
+
+        stage('Login to Harbor') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'harbor-creds',
+                    usernameVariable: 'HARBOR_USER',
+                    passwordVariable: 'HARBOR_PASS'
+                )]) {
+                    sh '''
+                        echo "${HARBOR_PASS}" | docker login ${HARBOR_REGISTRY} -u "${HARBOR_USER}" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push Image to Harbor') {
+            steps {
+                sh """
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker push ${IMAGE_NAME}:latest
+                """
+            }
+        }
+
+        stage('Update Kubernetes Manifest') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'gitlab-creds',
+                    usernameVariable: 'GITLAB_USER',
+                    passwordVariable: 'GITLAB_PASS'
+                )]) {
+                    sh """
+                        git config --global user.name "jenkins"
+                        git config --global user.email "jenkins@jenkins.local"
+                        git config --global http.sslVerify false
+
+                        rm -rf k8s-manifests
+                        git clone -b ${K8S_BRANCH} http://${GITLAB_USER}:${GITLAB_PASS}@gitlab.local/pfe/k8s-manifests.git k8s-manifests
+
+                        echo "==> Before update"
+                        grep 'image:' k8s-manifests/${DEPLOYMENT_FILE}
+
+                        sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s-manifests/${DEPLOYMENT_FILE}
+
+                        echo "==> After update"
+                        grep 'image:' k8s-manifests/${DEPLOYMENT_FILE}
+
+                        cd k8s-manifests
+                        git add ${DEPLOYMENT_FILE}
+                        git commit -m "ci: update ${SERVICE_NAME} image tag to ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
+                        git push http://${GITLAB_USER}:${GITLAB_PASS}@gitlab.local/pfe/k8s-manifests.git HEAD:${K8S_BRANCH}
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh """
+                docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
+                docker rmi ${IMAGE_NAME}:latest || true
+                docker logout ${HARBOR_REGISTRY} || true
+            """
+        }
+
+        success {
+            echo "${SERVICE_NAME} image pushed successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+
+        failure {
+            echo "${SERVICE_NAME} pipeline failed. Check Jenkins logs."
+        }
+    }
+}

@@ -1,0 +1,36 @@
+.shell {
+  min-height: 100vh;
+  background: #0b1020;
+  color: #e7eaf3;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.links a {
+  margin-left: 12px;
+  color: #cbd2ff;
+  text-decoration: none;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
+
+.content {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 18px;
+}
+
