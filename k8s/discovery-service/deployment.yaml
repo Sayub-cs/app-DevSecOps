@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discovery-service
+  template:
+    metadata:
+      labels:
+        app: discovery-service
+    spec:
+      imagePullSecrets:
+        - name: harbor-secret
+
+      containers:
+        - name: discovery-service
+          image: GITLAB_VM_IP:5050/zartos/apptest/SERVICE_NAME:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8761
+
+          env:
+            - name: SERVER_PORT
+              value: "8761"
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8761
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8761
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 5

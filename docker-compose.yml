@@ -1,0 +1,142 @@
+name: app-angular-springing
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  discovery-service:
+    build:
+      context: ./backend/discovery-service
+    environment:
+      SERVER_PORT: 8761
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: discovery-service
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+    environment:
+      SERVER_PORT: 8081
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${AUTH_DB_NAME:-auth_db}
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://app.local,http://localhost,http://localhost:4200}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:-http://discovery-service:8761/eureka/}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-lb://user-service}
+      STARTUP_DB_WAIT_ENABLED: "true"
+      STARTUP_DB_WAIT_TIMEOUT_SECONDS: "60"
+      STARTUP_DB_WAIT_INITIAL_DELAY_MS: "500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+
+  user-service:
+    build:
+      context: ./backend/user-service
+    environment:
+      SERVER_PORT: 8082
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${USER_DB_NAME:-userdb}
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://app.local,http://localhost,http://localhost:4200}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:-http://discovery-service:8761/eureka/}
+      STARTUP_DB_WAIT_ENABLED: "true"
+      STARTUP_DB_WAIT_TIMEOUT_SECONDS: "60"
+      STARTUP_DB_WAIT_INITIAL_DELAY_MS: "500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+
+  business-service:
+    build:
+      context: ./backend/business-service
+    environment:
+      SERVER_PORT: 8083
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${BUSINESS_DB_NAME:-businessdb}
+      DB_USER: ${POSTGRES_USER:-app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://app.local,http://localhost,http://localhost:4200}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:-http://discovery-service:8761/eureka/}
+      STARTUP_DB_WAIT_ENABLED: "true"
+      STARTUP_DB_WAIT_TIMEOUT_SECONDS: "60"
+      STARTUP_DB_WAIT_INITIAL_DELAY_MS: "500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://app.local,http://localhost,http://localhost:4200}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:-http://discovery-service:8761/eureka/}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-lb://auth-service}
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-lb://user-service}
+      BUSINESS_SERVICE_URL: ${BUSINESS_SERVICE_URL:-lb://business-service}
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      business-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      api-gateway:
+        condition: service_started
+
+volumes:
+  postgres_data:
+
