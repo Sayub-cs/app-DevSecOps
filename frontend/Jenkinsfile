@@ -8,16 +8,16 @@ pipeline {
     environment {
         SERVICE_NAME    = 'frontend'
 
-        GIT_REPO        = 'http://gitlab.local/pfe/Frontend.git'
+        GIT_REPO        = 'http://github.com/Sayub-cs/app-DevSecOps'
         GIT_BRANCH      = 'master'
 
-        HARBOR_REGISTRY = 'harbor.local'
-        HARBOR_PROJECT  = 'pfe'
-        IMAGE_NAME      = "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${SERVICE_NAME}"
+        DockerHub_REGISTRY = 'sayubb'
+        DockerHub_repo  = 'app-angular-springing-frontend'
+        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_repo}"
         IMAGE_TAG       = "${BUILD_NUMBER}"
 
-        GITLAB_HOST     = 'gitlab.local'
-        K8S_BRANCH      = 'master'
+        //GITLAB_HOST     = 'gitlab.local'
+        //K8S_BRANCH      = 'master'
         DEPLOYMENT_FILE = 'frontend/deployment.yaml'
     }
 
@@ -26,14 +26,14 @@ pipeline {
         stage('Checkout Frontend Repo') {
             steps {
                 git branch: "${GIT_BRANCH}",
-                    credentialsId: 'gitlab-creds',
+                    credentialsId: 'github-creds',
                     url: "${GIT_REPO}"
             }
         }
 
         stage('Verify Frontend Project') {
             steps {
-                sh '''
+                sh """
                     echo "==> Current workspace"
                     pwd
                     ls -la
@@ -43,7 +43,7 @@ pipeline {
                     test -f package.json
                     test -f angular.json
                     test -d src
-                '''
+                """
             }
         }
 
@@ -72,21 +72,21 @@ pipeline {
             }
         }
 
-        stage('Login to Harbor') {
+        stage('Login to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'harbor-creds',
-                    usernameVariable: 'HARBOR_USER',
-                    passwordVariable: 'HARBOR_PASS'
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PASS'
                 )]) {
                     sh '''
-                        echo "${HARBOR_PASS}" | docker login ${HARBOR_REGISTRY} -u "${HARBOR_USER}" --password-stdin
+                        echo "${DOCKERHUB_PASS}" | docker login ${DockerHub_REGISTRY} -u "${DOCKERHUB_USER}" --password-stdin
                     '''
                 }
             }
         }
 
-        stage('Push Image to Harbor') {
+        stage('Push Image to DockerHub') {
             steps {
                 sh '''
                     docker push ${IMAGE_NAME}:${IMAGE_TAG}
@@ -95,39 +95,7 @@ pipeline {
             }
         }
 
-        stage('Update Kubernetes Manifest') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'gitlab-creds',
-                    usernameVariable: 'GITLAB_USER',
-                    passwordVariable: 'GITLAB_PASS'
-                )]) {
-                    sh '''
-                        git config --global user.name "jenkins"
-                        git config --global user.email "jenkins@jenkins.local"
-                        git config --global http.sslVerify false
-
-                        rm -rf k8s-manifests
-
-                        git clone -b ${K8S_BRANCH} http://${GITLAB_USER}:${GITLAB_PASS}@${GITLAB_HOST}/pfe/k8s-manifests.git k8s-manifests
-
-                        echo "==> Before update"
-                        grep 'image:' k8s-manifests/${DEPLOYMENT_FILE}
-
-                        sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s-manifests/${DEPLOYMENT_FILE}
-
-                        echo "==> After update"
-                        grep 'image:' k8s-manifests/${DEPLOYMENT_FILE}
-
-                        cd k8s-manifests
-
-                        git add ${DEPLOYMENT_FILE}
-                        git commit -m "ci: update ${SERVICE_NAME} image tag to ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
-                        git push http://${GITLAB_USER}:${GITLAB_PASS}@${GITLAB_HOST}/pfe/k8s-manifests.git HEAD:${K8S_BRANCH}
-                    '''
-                }
-            }
-        }
+       
     }
 
     post {
@@ -135,7 +103,7 @@ pipeline {
             sh '''
                 docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                 docker rmi ${IMAGE_NAME}:latest || true
-                docker logout ${HARBOR_REGISTRY} || true
+                docker logout ${DockerHub_REGISTRY} || true
             '''
         }
 
