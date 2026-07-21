@@ -10,7 +10,7 @@ pipeline {
         SERVICE_DIR     = 'api-gateway'
 
         GIT_REPO        = 'http://github.com/Sayub-cs/app-DevSecOps'
-        GIT_BRANCH      = 'master'
+        GIT_BRANCH      = 'main'
 
         DockerHub_REGISTRY = 'sayubb'
         DockerHub_repo  = 'app-angular-springing-api-gateway'
