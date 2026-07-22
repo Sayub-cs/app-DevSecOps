@@ -69,14 +69,23 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ${SERVICE_DIR}
-                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                """
-            }
-        }
+       stage('Build Docker Image') {
+    environment {
+        DOCKER_BUILDKIT = '0'
+    }
+    steps {
+        sh '''
+            echo "DOCKER_BUILDKIT=$DOCKER_BUILDKIT"
+
+            docker build \
+              --progress=plain \
+              -t ${IMAGE_NAME}:${IMAGE_TAG} \
+              ${SERVICE_DIR}
+
+            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+        '''
+    }
+ }
 
         stage('Login to DockerHub') {
             steps {
