@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent-master' }
+    agent { label 'agent any' }
 
     options {
         skipDefaultCheckout(true)
@@ -7,8 +7,9 @@ pipeline {
 
     environment {
         SERVICE_NAME    = 'frontend'
+        SERVICE_DIR     = 'frontend'
 
-        GIT_REPO        = 'http://github.com/Sayub-cs/app-DevSecOps'
+        GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
         DockerHub_REGISTRY = 'sayubb'
@@ -18,7 +19,7 @@ pipeline {
 
         //GITLAB_HOST     = 'gitlab.local'
         //K8S_BRANCH      = 'master'
-        DEPLOYMENT_FILE = 'frontend/deployment.yaml'
+        DEPLOYMENT_FILE = 'k8s/frontend/deployment.yaml'
     }
 
     stages {

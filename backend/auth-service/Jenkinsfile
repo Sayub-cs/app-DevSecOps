@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent-master' }
+    agent { label 'agent any' }
 
     options {
         skipDefaultCheckout(true)
@@ -7,10 +7,10 @@ pipeline {
 
     environment {
         SERVICE_NAME    = 'auth-service'
-        SERVICE_DIR     = 'auth-service'
+        SERVICE_DIR     = 'backend/auth-service'
 
       
-        GIT_REPO        = 'http://github.com/Sayub-cs/app-DevSecOps'
+        GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
         DockerHub_REGISTRY = 'sayubb'
@@ -20,7 +20,7 @@ pipeline {
 
         //GITLAB_HOST     = 'http://gitlab.local/pfe/k8s-manifests.git'
         //K8S_BRANCH      = 'master'
-        DEPLOYMENT_FILE = 'auth-service/deployment.yaml'
+        DEPLOYMENT_FILE = 'k8s/auth-service/deployment.yaml'
     }
 
     stages {
@@ -94,13 +94,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh """
-                    kubectl apply -f ${DEPLOYMENT_FILE}
-                """
-            }
-        }
+       
     }
 
     post {

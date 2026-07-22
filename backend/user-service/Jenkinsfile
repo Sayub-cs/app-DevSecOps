@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent-master' }
+    agent { label 'agent any' }
 
     options {
         skipDefaultCheckout(true)
@@ -7,9 +7,9 @@ pipeline {
 
     environment {
         SERVICE_NAME    = 'user-service'
-        SERVICE_DIR     = 'user-service'
+        SERVICE_DIR     = 'backend/user-service'
    
-        GIT_REPO        = 'http://github.com/Sayub-cs/app-DevSecOps'
+        GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
         DockerHub_REGISTRY = 'sayubb'
@@ -19,7 +19,7 @@ pipeline {
 
         //GITLAB_HOST     = 'gitlab.local'
         //K8S_BRANCH      = 'master'
-        DEPLOYMENT_FILE = 'user-service/deployment.yaml'
+        DEPLOYMENT_FILE = 'k8s/user-service/deployment.yaml'
     }
 
     stages {
@@ -99,14 +99,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh """
-                    echo "==> Deploying user-service to Kubernetes"
-                    kubectl apply -f ${DEPLOYMENT_FILE} --record
-                """
-            }
-        }
+       
     }
 
     post {

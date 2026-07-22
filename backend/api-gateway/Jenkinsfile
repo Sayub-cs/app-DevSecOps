@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent-master' }
+    agent { label 'agent any' }
 
     options {
         skipDefaultCheckout(true)
@@ -7,9 +7,9 @@ pipeline {
 
     environment {
         SERVICE_NAME    = 'api-gateway'
-        SERVICE_DIR     = 'api-gateway'
+        SERVICE_DIR     = 'backend/api-gateway'
 
-        GIT_REPO        = 'http://github.com/Sayub-cs/app-DevSecOps'
+        GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
         DockerHub_REGISTRY = 'sayubb'
@@ -18,8 +18,8 @@ pipeline {
         IMAGE_TAG       = "${BUILD_NUMBER}"
 
         //K8S_REPO        = ''
-        //K8S_BRANCH      = 'master'
-        DEPLOYMENT_FILE = 'api-gateway/deployment.yaml'
+        //K8S_BRANCH      ='master'
+        DEPLOYMENT_FILE = 'k8s/api-gateway/deployment.yaml'
     }
 
     stages {
@@ -101,13 +101,6 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh """
-                    kubectl apply -f ${DEPLOYMENT_FILE}
-                """
-            }
-        }
     }
 
     post {
