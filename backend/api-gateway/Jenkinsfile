@@ -70,13 +70,10 @@ pipeline {
         }
 
        stage('Build Docker Image') {
-    environment {
-        DOCKER_BUILDKIT = '0'
-    }
+    
     steps {
         sh '''
-            echo "DOCKER_BUILDKIT=$DOCKER_BUILDKIT"
-
+           
             docker build \
               --progress=plain \
               -t ${IMAGE_NAME}:${IMAGE_TAG} \
