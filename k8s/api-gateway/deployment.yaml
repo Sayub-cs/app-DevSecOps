@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      imagePullSecrets:
+        - name: harbor-secret
+
+      containers:
+        - name: api-gateway
+          image: $CI_REGISTRY_IMAGE/$SERVICE_NAME:$IMAGE_TAG
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+
+            - name: CORS_ALLOWED_ORIGINS
+              value: "http://app.local,http://localhost"
+
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:8081"
+
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8082"
+
+            - name: BUSINESS_SERVICE_URL
+              value: "http://business-service:8083"
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 5
