@@ -13,9 +13,10 @@ pipeline {
         GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
-        DockerHub_REGISTRY = 'sayubb'
+        DockerHub_REGISTRY = 'docker.io'
+        DockerHub_user  = 'sayubb'
         DockerHub_repo  = 'app-angular-springing-auth-service'
-        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_repo}"
+        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_user}/${DockerHub_repo}"
         IMAGE_TAG       = "${BUILD_NUMBER}"
 
         //GITLAB_HOST     = 'http://gitlab.local/pfe/k8s-manifests.git'
@@ -79,7 +80,7 @@ pipeline {
                     passwordVariable: 'DOCKERHUB_PASS'
                 )]) {
                     sh '''
-                        echo "${DOCKERHUB_PASS}" | docker login ${DockerHub_REGISTRY} -u "${DOCKERHUB_USER}" --password-stdin
+                        echo "${DOCKERHUB_PASS}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
                     '''
                 }
             }
