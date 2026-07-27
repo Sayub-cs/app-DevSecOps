@@ -41,10 +41,10 @@ pipeline {
                     ls -la
 
                     echo "==> Verify frontend files"
-                    test -f Dockerfile
-                    test -f package.json
-                    test -f angular.json
-                    test -d src
+                    test -f frontend/Dockerfile
+                    test -f frontend/package.json
+                    test -f frontend/angular.json
+                    test -d frontend/src
                 """
             }
         }
