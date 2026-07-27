@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent-master' }
+    agent { label 'agent-master }
 
     options {
         skipDefaultCheckout(true)
@@ -9,23 +9,23 @@ pipeline {
         SERVICE_NAME    = 'frontend'
         SERVICE_DIR     = 'frontend'
 
-      
         GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
         DockerHub_REGISTRY = 'docker.io'
         DockerHub_user  = 'sayubb'
         DockerHub_repo  = 'app-angular-springing-frontend'
-        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_user}/${DockerHub_repo}"
+        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_repo}"
         IMAGE_TAG       = "${BUILD_NUMBER}"
 
-        //GITLAB_HOST     = 'http://gitlab.local/pfe/k8s-manifests.git'
+        //GITLAB_HOST     = 'gitlab.local'
         //K8S_BRANCH      = 'master'
         DEPLOYMENT_FILE = 'k8s/frontend/deployment.yaml'
     }
 
     stages {
-        stage('Checkout Backend Repo') {
+
+        stage('Checkout Frontend Repo') {
             steps {
                 git branch: "${GIT_BRANCH}",
                     credentialsId: 'github-creds',
@@ -33,16 +33,18 @@ pipeline {
             }
         }
 
-        stage('Verify Project') {
+        stage('Verify Frontend Project') {
             steps {
                 sh """
+                    echo "==> Current workspace"
                     pwd
                     ls -la
-                    test -d ${SERVICE_DIR}
-                    test -f ${SERVICE_DIR}/Dockerfile
-                    test -f ${SERVICE_DIR}/pom.xml
-                    test -d ${SERVICE_DIR}/src
-                    ls -la ${SERVICE_DIR}
+
+                    echo "==> Verify frontend files"
+                    test -f Dockerfile
+                    test -f package.json
+                    test -f angular.json
+                    test -d src
                 """
             }
         }
@@ -65,10 +67,10 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ${SERVICE_DIR}
+                sh '''
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                """
+                '''
             }
         }
 
@@ -80,7 +82,7 @@ pipeline {
                     passwordVariable: 'DOCKERHUB_PASS'
                 )]) {
                     sh '''
-                        echo "${DOCKERHUB_PASS}" | docker login -u "${DockerHub_user}" --password-stdin
+                        echo "${DOCKERHUB_PASS}" | docker login ${DockerHub_REGISTRY} -u "${DockerHub_user}" --password-stdin
                     '''
                 }
             }
@@ -88,10 +90,10 @@ pipeline {
 
         stage('Push Image to DockerHub') {
             steps {
-                sh """
+                sh '''
                     docker push ${IMAGE_NAME}:${IMAGE_TAG}
                     docker push ${IMAGE_NAME}:latest
-                """
+                '''
             }
         }
 
@@ -100,19 +102,19 @@ pipeline {
 
     post {
         always {
-            sh """
+            sh '''
                 docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                 docker rmi ${IMAGE_NAME}:latest || true
                 docker logout ${DockerHub_REGISTRY} || true
-            """
+            '''
         }
 
         success {
-            echo "${SERVICE_NAME} image pushed successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "frontend image pushed successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
-            echo "${SERVICE_NAME} pipeline failed. Check Jenkins logs."
+            echo "frontend pipeline failed. Check Jenkins logs."
         }
     }
 }
