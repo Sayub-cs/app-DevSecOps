@@ -65,15 +65,16 @@ pipeline {
             }
         }
         stage('Build Docker Image') {
-            steps {
-                sh '''
-                    docker build \
-                    -t ${IMAGE_NAME}:${BUILD_NUMBER} \
-                    frontend
-                '''
-            }
-        }
+        steps {
+            sh '''
+                docker build \
+                -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                frontend
 
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+            '''
+        }
+    }
         stage('Login to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
