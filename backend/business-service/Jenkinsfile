@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent-master }
+    agent { label 'agent-master' }
 
     options {
         skipDefaultCheckout(true)
@@ -9,22 +9,22 @@ pipeline {
         SERVICE_NAME    = 'business-service'
         SERVICE_DIR     = 'backend/business-service'
 
-       
+      
         GIT_REPO        = 'https://github.com/Sayub-cs/app-DevSecOps.git'
         GIT_BRANCH      = 'main'
 
-        DockerHub_REGISTRY = 'sayubb'
+        DockerHub_REGISTRY = 'docker.io'
+        DockerHub_user  = 'sayubb'
         DockerHub_repo  = 'app-angular-springing-business-service'
-        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_repo}"
+        IMAGE_NAME      = "${DockerHub_REGISTRY}/${DockerHub_user}/${DockerHub_repo}"
         IMAGE_TAG       = "${BUILD_NUMBER}"
 
-        //GITLAB_HOST     = 'gitlab.local'
+        //GITLAB_HOST     = 'http://gitlab.local/pfe/k8s-manifests.git'
         //K8S_BRANCH      = 'master'
         DEPLOYMENT_FILE = 'k8s/business-service/deployment.yaml'
     }
 
     stages {
-
         stage('Checkout Backend Repo') {
             steps {
                 git branch: "${GIT_BRANCH}",
@@ -36,17 +36,12 @@ pipeline {
         stage('Verify Project') {
             steps {
                 sh """
-                    echo "==> Current workspace"
                     pwd
                     ls -la
-
-                    echo "==> Verify business-service files"
                     test -d ${SERVICE_DIR}
                     test -f ${SERVICE_DIR}/Dockerfile
                     test -f ${SERVICE_DIR}/pom.xml
                     test -d ${SERVICE_DIR}/src
-
-                    echo "==> business-service structure"
                     ls -la ${SERVICE_DIR}
                 """
             }
@@ -70,10 +65,10 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
+                sh """
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ${SERVICE_DIR}
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                '''
+                """
             }
         }
 
@@ -85,7 +80,7 @@ pipeline {
                     passwordVariable: 'DOCKERHUB_PASS'
                 )]) {
                     sh '''
-                        echo "${DOCKERHUB_PASS}" | docker login ${DockerHub_REGISTRY} -u "${DOCKERHUB_USER}" --password-stdin
+                        echo "${DOCKERHUB_PASS}" | docker login -u "${DockerHub_user}" --password-stdin
                     '''
                 }
             }
@@ -93,10 +88,10 @@ pipeline {
 
         stage('Push Image to DockerHub') {
             steps {
-                sh '''
+                sh """
                     docker push ${IMAGE_NAME}:${IMAGE_TAG}
                     docker push ${IMAGE_NAME}:latest
-                '''
+                """
             }
         }
 
@@ -105,19 +100,19 @@ pipeline {
 
     post {
         always {
-            sh '''
+            sh """
                 docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                 docker rmi ${IMAGE_NAME}:latest || true
                 docker logout ${DockerHub_REGISTRY} || true
-            '''
+            """
         }
 
         success {
-            echo "business-service image pushed successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "${SERVICE_NAME} image pushed successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
-            echo "business-service pipeline failed. Check Jenkins logs."
+            echo "${SERVICE_NAME} pipeline failed. Check Jenkins logs."
         }
     }
 }
