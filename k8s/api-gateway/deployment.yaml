@@ -53,19 +53,19 @@ spec:
               value: "http://business-service:8083"
 
           livenessProbe:
-  httpGet:
-    path: /actuator/health
-    port: 8080
-  initialDelaySeconds: 90
-  periodSeconds: 20
-  timeoutSeconds: 5
-  failureThreshold: 5
-
-readinessProbe:
-  httpGet:
-    path: /actuator/health
-    port: 8080
-  initialDelaySeconds: 60
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 12
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              initialDelaySeconds: 90
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 5
+              
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              initialDelaySeconds: 60
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 12
