@@ -12,13 +12,10 @@ spec:
     metadata:
       labels:
         app: user-service
-    spec:
-      imagePullSecrets:
-        - name: harbor-secret
-
+   
       containers:
         - name: user-service
-          image: harbor.local/pfe/user-service:latest
+          image: sayubb/app-angular-springing-user-service:latest
           imagePullPolicy: Always
 
           ports:
