@@ -13,16 +13,22 @@ spec:
       labels:
         app: business-service
     spec:
-      imagePullSecrets:
-        - name: harbor-secret
 
       containers:
         - name: business-service
-          image: GITLAB_VM_IP:5050/zartos/apptest/SERVICE_NAME:latest
+          image: sayubb/app-angular-springing-business-service:latest
           imagePullPolicy: Always
 
           ports:
             - containerPort: 8083
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
 
           env:
             - name: SERVER_PORT

@@ -13,12 +13,10 @@ spec:
       labels:
         app: discovery-service
     spec:
-      imagePullSecrets:
-        - name: harbor-secret
 
       containers:
         - name: discovery-service
-          image: GITLAB_VM_IP:5050/zartos/apptest/SERVICE_NAME:latest
+          image: sayubb/app-angular-springing-discovery-service:latest
           imagePullPolicy: Always
 
           ports:
@@ -27,6 +25,14 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8761"
+
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+            requests:
+              cpu: "250m"
+              memory: "128Mi"
 
           readinessProbe:
             httpGet:

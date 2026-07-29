@@ -16,12 +16,10 @@ spec:
         app: frontend
 
     spec:
-      imagePullSecrets:
-        - name: harbor-secret
 
       containers:
         - name: frontend
-          image: GITLAB_VM_IP:5050/zartos/apptest/SERVICE_NAME:latest
+          image: sayubb/app-angular-springing-frontend:latest
           imagePullPolicy: Always
 
           resources:

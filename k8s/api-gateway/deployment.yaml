@@ -13,16 +13,22 @@ spec:
       labels:
         app: api-gateway
     spec:
-      imagePullSecrets:
-        - name: harbor-secret
-
+      
       containers:
         - name: api-gateway
-          image: $CI_REGISTRY_IMAGE/$SERVICE_NAME:$IMAGE_TAG
+          image: sayubb/app-angular-springing-api-gateway:latest
           imagePullPolicy: Always
 
           ports:
             - containerPort: 8080
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
 
           env:
             - name: SERVER_PORT

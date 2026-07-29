@@ -13,16 +13,22 @@ spec:
       labels:
         app: auth-service
     spec:
-      imagePullSecrets:
-        - name: harbor-secret
-
+    
       containers:
         - name: auth-service
-          image: GITLAB_VM_IP:5050/zartos/apptest/SERVICE_NAME:latest
+          image: sayubb/app-angular-springing-auth-service:latest
           imagePullPolicy: Always
 
           ports:
             - containerPort: 8081
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
 
           env:
             - name: SERVER_PORT
