@@ -34,20 +34,4 @@ spec:
               cpu: "250m"
               memory: "128Mi"
 
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8761
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 12
-
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8761
-            initialDelaySeconds: 30
-            periodSeconds: 20
-            timeoutSeconds: 3
-            failureThreshold: 5
+          
