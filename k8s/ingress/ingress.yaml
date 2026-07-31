@@ -17,7 +17,7 @@ spec:
               service:
                 name: api-gateway
                 port:
-                  number: 8080
+                  number: 9090
 
           - path: /
             pathType: Prefix
