@@ -5,7 +5,12 @@ resources:
   - 00-namespace.yaml
   - 01-secrets.yaml
   - 02-postgres.yaml
-
+  
+  - sonarqube/secret.yaml
+  - sonarqube/pvc.yaml
+  - sonarqube/service.yaml
+  - sonarqube/deployment.yaml
+  
   - discovery-service/deployment.yaml
   - discovery-service/service.yaml
 
