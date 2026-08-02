@@ -5,8 +5,10 @@ metadata:
   namespace: app
   annotations:
     kubernetes.io/ingress.class: nginx
+
 spec:
   ingressClassName: nginx
+
   rules:
     - host: app.local
       http:
@@ -25,4 +27,23 @@ spec:
               service:
                 name: frontend
                 port:
-                  number: 80
+                  number: 80 
+
+          - path: /discovery
+            pathType: Prefix
+            backend:
+              service:
+                name: discovery-service
+                port:
+                  number: 8761
+
+    - host: sonar.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sonarqube
+                port:
+                  number: 9000

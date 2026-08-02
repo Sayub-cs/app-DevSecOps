@@ -1,5 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: sonarqube
   namespace: app
@@ -8,6 +9,9 @@ metadata:
 
 spec:
   replicas: 1
+
+  strategy:
+    type: RollingUpdate
 
   selector:
     matchLabels:
@@ -27,12 +31,12 @@ spec:
 
       containers:
         - name: sonarqube
-          image: sonarqube:lts-community
+          image: sonarqube:25.7.0.110598-community
           imagePullPolicy: IfNotPresent
 
           ports:
-            - containerPort: 9000
-              name: http
+            - name: http
+              containerPort: 9000
 
           env:
             - name: SONAR_JDBC_URL
@@ -77,12 +81,21 @@ spec:
             - name: sonarqube-logs
               mountPath: /opt/sonarqube/logs
 
+          startupProbe:
+            httpGet:
+              path: /
+              port: 9000
+            failureThreshold: 60
+            periodSeconds: 10
+
           readinessProbe:
             httpGet:
               path: /
               port: 9000
             initialDelaySeconds: 90
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
 
           livenessProbe:
             httpGet:
@@ -90,6 +103,8 @@ spec:
               port: 9000
             initialDelaySeconds: 120
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
 
       volumes:
         - name: sonarqube-data
