@@ -32,7 +32,7 @@ spec:
       containers:
         - name: sonarqube
           image: sonarqube:25.7.0.110598-community
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
 
           ports:
             - name: http
