@@ -49,6 +49,32 @@ pipeline {
             }
         }
 
+        stage('Verify Tools') {
+            steps {
+                sh '''
+                    node --version
+                    npm --version
+                    trivy --config /dev/null --version
+                    sonar-sanner --version
+                '''
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                dir("${SERVICE_DIR}") {
+                    sh '''
+                        npm ci
+                    '''
+                }
+            }
+        }
+          stage('SonarQube Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
         stage('Verify Docker Access') {
             steps {
                 sh '''
@@ -64,6 +90,7 @@ pipeline {
                 sh 'docker builder prune -a -f || true'
             }
         }
+
         stage('Build Docker Image') {
         steps {
             sh '''
@@ -75,6 +102,20 @@ pipeline {
             '''
         }
     }
+          stage('Trivy Security Scan') {
+            steps {
+                sh """
+                    trivy \
+                        --config /dev/null \
+                        image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --timeout 30m \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+            }
+        }
+
         stage('Login to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
@@ -116,6 +157,8 @@ pipeline {
 
         failure {
             echo "frontend pipeline failed. Check Jenkins logs."
+            echo "Check SonarQube and Trivy results."
+
         }
     }
 }

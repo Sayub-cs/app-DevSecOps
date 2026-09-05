@@ -53,6 +53,44 @@ pipeline {
             }
         }
 
+          stage('Verify Tools') {
+            steps {
+                sh '''
+                    echo "Java:"
+                    java -version
+
+                    echo "Maven:"
+                    mvn --version
+
+                    echo "Trivy:"
+                    trivy --config /dev/null --version
+                '''
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                dir("${SERVICE_DIR}") {
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            mvn -B clean verify sonar:sonar \
+                                -Dsonar.projectKey=${SERVICE_NAME} \
+                                -Dsonar.projectName=${SERVICE_NAME}
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('SonarQube Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+
         stage('Verify Docker Access') {
             steps {
                 sh '''
@@ -81,8 +119,22 @@ pipeline {
 
             docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
         '''
+        }
     }
- }
+
+         stage('Trivy Security Scan') {
+            steps {
+                sh """
+                    trivy \
+                        --config /dev/null \
+                        image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL \
+                        --timeout 30m \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+            }
+        }
 
         stage('Login to DockerHub') {
             steps {
@@ -124,6 +176,8 @@ pipeline {
 
         failure {
             echo "Api Gateway pipeline failed. Check Jenkins logs."
+            echo "Check SonarQube and Trivy results."
+
         }
     }
 }
