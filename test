@@ -1,0 +1,12 @@
+pipeline {
+    agent { label 'agent-master' }
+
+    stages {
+        stage('Test Maven') {
+            steps {
+                sh 'which mvn'
+                sh 'mvn --version'
+            }
+        }
+    }
+}
