@@ -65,7 +65,8 @@ pipeline {
                 dir("${SERVICE_DIR}") {
                     withSonarQubeEnv('sonarqube') {
                         sh """
-                            mvn -B clean verify sonar:sonar \
+                            mvn -B clean verify  \
+                                org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                                 -Dsonar.projectKey=${SERVICE_NAME} \
                                 -Dsonar.projectName=${SERVICE_NAME}
                         """
