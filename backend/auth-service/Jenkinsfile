@@ -121,8 +121,8 @@ pipeline {
                         --scanners vuln,misconfig,secret \
                         --severity HIGH,CRITICAL \
                         --exit-code 1 \
-                         --format json \
-                         --output trivy-report.json \
+                        --format json \
+                        --output trivy-report.json \
                         --timeout 30m \
                         ${IMAGE_NAME}:${IMAGE_TAG}
                 """
