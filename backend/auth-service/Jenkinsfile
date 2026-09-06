@@ -118,8 +118,11 @@ pipeline {
                     trivy \
                         --config /dev/null \
                         image \
-                        --scanners vuln \
+                        --scanners vuln,misconfig,secret \
                         --severity HIGH,CRITICAL \
+                        --exit-code 1 \
+                         --format json \
+                         --output trivy-report.json \
                         --timeout 30m \
                         ${IMAGE_NAME}:${IMAGE_TAG}
                 """
@@ -145,7 +148,6 @@ pipeline {
             steps {
                 sh """
                     docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push ${IMAGE_NAME}:latest
                 """
             }
         }
@@ -155,6 +157,8 @@ pipeline {
 
     post {
         always {
+            archiveArtifacts artifacts: 'trivy-report.json',
+                         allowEmptyArchive: true
             sh """
                 docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
                 docker rmi ${IMAGE_NAME}:latest || true
